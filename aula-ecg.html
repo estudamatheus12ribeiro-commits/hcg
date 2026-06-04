@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECG do Zero — Aula Interativa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Mono:wght@400;500;600;700&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070b10;
+  --bg2:#0c131c;
+  --panel:#101a26;
+  --panel-soft:#13202e;
+  --line:#1f3346;
+  --green:#34f6a8;
+  --green-dim:#1d8f63;
+  --green-glow:rgba(52,246,168,.55);
+  --amber:#ffb74d;
+  --red:#ff5d6c;
+  --red-soft:#ff8a96;
+  --blue:#5fb8ff;
+  --violet:#b98dff;
+  --ink:#e8f4ee;
+  --muted:#8aa3b5;
+  --muted2:#5d7385;
+  --paper:#fff4f0;
+  --paper-line:#f2a9a0;
+  --paper-line-bold:#e07d72;
+  --paper-ink:#3a2c2c;
+  --mono:'IBM Plex Mono',monospace;
+  --display:'Bricolage Grotesque',sans-serif;
+  --body:'Sora',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:
+    radial-gradient(900px 500px at 80% -10%, rgba(52,246,168,.08), transparent 60%),
+    radial-gradient(700px 600px at 0% 100%, rgba(95,184,255,.07), transparent 55%),
+    var(--bg);
+  color:var(--ink);
+  font-family:var(--body);
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:90px;
+}
+.wrap{max-width:980px;margin:0 auto;padding:0 18px}
+
+/* ---------- HEADER ---------- */
+header.top{
+  position:relative;
+  padding:54px 18px 30px;
+  text-align:center;
+  overflow:hidden;
+}
+.kicker{
+  font-family:var(--mono);
+  font-size:.74rem;
+  letter-spacing:.34em;
+  text-transform:uppercase;
+  color:var(--green);
+  display:inline-block;
+  padding:6px 14px;
+  border:1px solid var(--green-dim);
+  border-radius:999px;
+  margin-bottom:18px;
+  background:rgba(52,246,168,.06);
+}
+h1.title{
+  font-family:var(--display);
+  font-weight:800;
+  font-size:clamp(2.1rem,7vw,4rem);
+  line-height:1.02;
+  letter-spacing:-.02em;
+  margin-bottom:14px;
+}
+h1.title .hl{color:var(--green);text-shadow:0 0 26px var(--green-glow)}
+.subtitle{color:var(--muted);max-width:560px;margin:0 auto;font-size:1.02rem}
+
+/* mini-monitor in header */
+.hero-monitor{
+  margin:34px auto 6px;
+  max-width:760px;
+  background:linear-gradient(180deg,#0a1118,#070d13);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:14px 16px 10px;
+  box-shadow:0 24px 60px rgba(0,0,0,.5), inset 0 0 40px rgba(52,246,168,.04);
+}
+.hero-monitor-bar{
+  display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--mono);font-size:.72rem;color:var(--muted);margin-bottom:6px;
+}
+.hero-monitor-bar .bpm{color:var(--green);font-weight:600}
+.pulse-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:blip 1s infinite}
+@keyframes blip{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ---------- PROGRESS / NAV ---------- */
+nav.modnav{
+  position:sticky;top:0;z-index:40;
+  background:rgba(7,11,16,.86);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+  padding:10px 0;
+  margin-bottom:26px;
+}
+.modnav-inner{display:flex;gap:8px;overflow-x:auto;padding:0 18px;scrollbar-width:thin}
+.modnav-inner::-webkit-scrollbar{height:5px}
+.modnav-inner::-webkit-scrollbar-thumb{background:var(--line);border-radius:9px}
+.navbtn{
+  flex:0 0 auto;
+  font-family:var(--mono);font-size:.76rem;
+  color:var(--muted);background:var(--panel);
+  border:1px solid var(--line);border-radius:10px;
+  padding:8px 13px;cursor:pointer;white-space:nowrap;
+  transition:.18s;
+}
+.navbtn:hover{color:var(--ink);border-color:var(--green-dim)}
+.navbtn.active{color:var(--bg);background:var(--green);border-color:var(--green);font-weight:600}
+.navbtn .n{opacity:.6;margin-right:6px}
+
+/* ---------- MODULE ---------- */
+.module{display:none;animation:fade .4s ease}
+.module.show{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.mod-head{display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap}
+.mod-num{
+  font-family:var(--mono);font-size:.8rem;color:var(--green);
+  border:1px solid var(--green-dim);border-radius:8px;padding:3px 9px;
+}
+h2.mod-title{font-family:var(--display);font-weight:700;font-size:clamp(1.6rem,4.5vw,2.4rem);letter-spacing:-.015em}
+.mod-intro{color:var(--muted);font-size:1.04rem;margin:6px 0 26px;max-width:680px}
+
+.card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:22px;
+  margin-bottom:18px;
+}
+.card h3{font-family:var(--display);font-weight:600;font-size:1.22rem;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.card h3 .ic{font-size:1.3rem}
+.card p{color:#cdddd5;margin-bottom:10px}
+.card p:last-child{margin-bottom:0}
+.lead{font-size:1.05rem;color:var(--ink)}
+strong{color:var(--green);font-weight:600}
+.an{color:var(--amber);font-weight:600}
+.rd{color:var(--red-soft);font-weight:600}
+.bl{color:var(--blue);font-weight:600}
+
+.tip{
+  border-left:3px solid var(--green);
+  background:rgba(52,246,168,.06);
+  padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;
+  font-size:.96rem;color:#cdeede;
+}
+.tip b{color:var(--green)}
+.warn{border-left-color:var(--red);background:rgba(255,93,108,.07);color:#ffd6da}
+.warn b{color:var(--red-soft)}
+
+/* ---------- HEART CONDUCTION (Module 1) ---------- */
+.heart-stage{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;align-items:center}
+@media(max-width:720px){.heart-stage{grid-template-columns:1fr}}
+.heart-svg-box{background:radial-gradient(circle at 50% 40%,#15212f,#0a121b);border:1px solid var(--line);border-radius:16px;padding:10px}
+.node-list{display:flex;flex-direction:column;gap:10px}
+.node{
+  display:flex;gap:12px;align-items:flex-start;
+  padding:12px 14px;border:1px solid var(--line);border-radius:12px;
+  background:var(--panel-soft);transition:.25s;
+}
+.node.active{border-color:var(--green);box-shadow:0 0 0 1px var(--green),0 0 22px rgba(52,246,168,.18);background:rgba(52,246,168,.07)}
+.node .dot{width:14px;height:14px;border-radius:50%;background:var(--muted2);margin-top:5px;flex:0 0 auto;transition:.25s}
+.node.active .dot{background:var(--green);box-shadow:0 0 12px var(--green)}
+.node h4{font-size:.98rem;font-family:var(--display);font-weight:600}
+.node small{color:var(--muted);font-size:.84rem;display:block;line-height:1.45}
+.ctrl-row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+button.btn{
+  font-family:var(--mono);font-size:.84rem;cursor:pointer;
+  border-radius:10px;padding:10px 16px;border:1px solid var(--green-dim);
+  background:rgba(52,246,168,.08);color:var(--green);transition:.18s;font-weight:600;
+}
+button.btn:hover{background:var(--green);color:var(--bg)}
+button.btn.ghost{border-color:var(--line);background:var(--panel);color:var(--muted)}
+button.btn.ghost:hover{color:var(--ink);border-color:var(--muted2)}
+
+/* ---------- INTERACTIVE WAVE (Module 2) ---------- */
+.wave-box{background:#0a1119;border:1px solid var(--line);border-radius:16px;padding:8px 6px;position:relative}
+.wave-svg{display:block;width:100%;height:auto;cursor:crosshair}
+.seg-tag{fill:var(--mono);}
+.wave-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:14px}
+.legchip{
+  border:1px solid var(--line);border-radius:10px;padding:9px 11px;cursor:pointer;
+  background:var(--panel-soft);transition:.18s;text-align:left;
+}
+.legchip:hover{border-color:var(--muted2)}
+.legchip.on{border-color:currentColor;box-shadow:0 0 0 1px currentColor}
+.legchip .lab{font-family:var(--mono);font-weight:700;font-size:.92rem}
+.legchip .sub{font-size:.74rem;color:var(--muted);display:block;margin-top:2px}
+.wave-explain{
+  margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:16px;
+  background:var(--panel-soft);min-height:90px;transition:.2s;
+}
+.wave-explain .et{font-family:var(--display);font-weight:600;font-size:1.1rem;margin-bottom:4px}
+.wave-explain .ev{font-family:var(--mono);font-size:.8rem;color:var(--amber);margin-bottom:6px}
+
+/* ---------- ECG PAPER (Module 3) ---------- */
+.paper{
+  background:var(--paper);border-radius:14px;overflow:hidden;border:1px solid #d8b3ad;
+  background-image:
+    linear-gradient(var(--paper-line) 1px,transparent 1px),
+    linear-gradient(90deg,var(--paper-line) 1px,transparent 1px),
+    linear-gradient(var(--paper-line-bold) 2px,transparent 2px),
+    linear-gradient(90deg,var(--paper-line-bold) 2px,transparent 2px);
+  background-size:8px 8px,8px 8px,40px 40px,40px 40px;
+  position:relative;padding:0;
+}
+.paper svg{display:block;width:100%;height:auto}
+.measure-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+@media(max-width:600px){.measure-grid{grid-template-columns:1fr}}
+.measure-card{border:1px solid var(--line);border-radius:12px;padding:16px;background:var(--panel-soft)}
+.measure-card .big{font-family:var(--mono);font-size:1.5rem;color:var(--green);font-weight:700}
+.measure-card .lab{font-size:.82rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.sq{display:inline-block;width:13px;height:13px;border:1px solid var(--paper-line-bold);background:var(--paper);vertical-align:middle;margin:0 3px;border-radius:2px}
+.sqb{display:inline-block;width:13px;height:13px;border:2px solid var(--paper-line-bold);background:var(--paper);vertical-align:middle;margin:0 3px;border-radius:2px}
+
+/* ---------- HR CALC (Module 4) ---------- */
+.calc-monitor{background:#0a1119;border:1px solid var(--line);border-radius:16px;padding:10px;position:relative}
+.calc-readout{
+  display:flex;align-items:baseline;gap:8px;justify-content:center;margin:6px 0 12px;
+  font-family:var(--mono);
+}
+.calc-readout .num{font-size:3.2rem;font-weight:700;color:var(--green);text-shadow:0 0 22px var(--green-glow);line-height:1}
+.calc-readout .unit{font-size:1rem;color:var(--muted)}
+.calc-readout .num.tachy{color:var(--red);text-shadow:0 0 22px rgba(255,93,108,.5)}
+.calc-readout .num.brady{color:var(--blue);text-shadow:0 0 22px rgba(95,184,255,.5)}
+.slider-row{display:flex;flex-direction:column;gap:6px;margin:8px 4px 4px}
+.slider-row label{font-family:var(--mono);font-size:.8rem;color:var(--muted);display:flex;justify-content:space-between}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;height:6px;border-radius:6px;
+  background:linear-gradient(90deg,var(--green-dim),var(--green));outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green-glow);cursor:pointer;border:2px solid #0a1119}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--green);border:2px solid #0a1119;cursor:pointer}
+.method-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:16px}
+.method{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--panel-soft)}
+.method .mname{font-family:var(--display);font-weight:600;margin-bottom:6px;color:var(--ink)}
+.method .calc{font-family:var(--mono);font-size:.92rem;color:var(--green)}
+.method small{color:var(--muted);font-size:.8rem}
+
+/* ---------- LEADS (Module 5) ---------- */
+.leads-wrap{display:grid;grid-template-columns:1fr;gap:18px}
+.lead-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
+@media(max-width:680px){.lead-grid{grid-template-columns:repeat(3,1fr)}}
+.leadbtn{
+  font-family:var(--mono);font-size:.82rem;font-weight:600;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel-soft);color:var(--muted);
+  border-radius:10px;padding:11px 6px;transition:.16s;text-align:center;
+}
+.leadbtn:hover{color:var(--ink);border-color:var(--muted2)}
+.leadbtn.on{background:var(--green);color:var(--bg);border-color:var(--green)}
+.leadbtn.on.terr{background:var(--amber);border-color:var(--amber)}
+.leadbtn small{display:block;font-weight:400;font-size:.66rem;opacity:.7;margin-top:2px}
+.lead-info{border:1px solid var(--line);border-radius:12px;padding:16px;background:var(--panel-soft);min-height:80px}
+.lead-info .li-t{font-family:var(--display);font-weight:600;font-size:1.1rem;margin-bottom:4px}
+.lead-grp{font-family:var(--mono);font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
+
+/* ---------- SYSTEMATIC (Module 6) ---------- */
+.steps{counter-reset:step;display:flex;flex-direction:column;gap:12px}
+.step{
+  border:1px solid var(--line);border-radius:12px;background:var(--panel-soft);
+  padding:16px 18px 16px 56px;position:relative;cursor:pointer;transition:.2s;
+}
+.step::before{
+  counter-increment:step;content:counter(step);
+  position:absolute;left:14px;top:14px;width:30px;height:30px;border-radius:8px;
+  display:grid;place-items:center;font-family:var(--mono);font-weight:700;
+  background:var(--panel);border:1px solid var(--green-dim);color:var(--green);
+}
+.step h4{font-family:var(--display);font-weight:600;font-size:1.06rem;margin-bottom:3px}
+.step .sd{color:var(--muted);font-size:.92rem;max-height:0;overflow:hidden;transition:.3s;opacity:0}
+.step.open .sd{max-height:240px;opacity:1;margin-top:8px}
+.step .q{font-family:var(--mono);color:var(--amber);font-size:.82rem}
+
+/* ---------- RHYTHM GALLERY (Module 7) ---------- */
+.rhythm-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.rtab{
+  font-family:var(--mono);font-size:.78rem;cursor:pointer;border-radius:9px;
+  padding:8px 12px;border:1px solid var(--line);background:var(--panel-soft);color:var(--muted);transition:.16s;
+}
+.rtab:hover{color:var(--ink)}
+.rtab.on{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+.rtab.danger.on{background:var(--red);color:#fff;border-color:var(--red)}
+.rhythm-monitor{background:#0a1119;border:1px solid var(--line);border-radius:16px;padding:12px;position:relative;overflow:hidden}
+.rhythm-monitor.alarm{border-color:var(--red);box-shadow:0 0 0 1px var(--red),0 0 30px rgba(255,93,108,.25)}
+.rm-top{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:.78rem;margin-bottom:4px}
+.rm-name{color:var(--green);font-weight:600}
+.rm-name.danger{color:var(--red)}
+.rm-bpm{color:var(--muted)}
+.rhythm-desc{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:16px;background:var(--panel-soft)}
+.rhythm-desc .rt{font-family:var(--display);font-weight:600;font-size:1.15rem;margin-bottom:6px}
+.rhythm-desc ul{list-style:none;margin-top:8px}
+.rhythm-desc li{padding-left:20px;position:relative;margin-bottom:5px;font-size:.95rem;color:#cdddd5}
+.rhythm-desc li::before{content:'';position:absolute;left:2px;top:9px;width:7px;height:7px;border-radius:50%;background:var(--green)}
+.rhythm-desc.danger li::before{background:var(--red)}
+.sev{display:inline-block;font-family:var(--mono);font-size:.7rem;padding:3px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}
+.sev.ok{background:rgba(52,246,168,.14);color:var(--green)}
+.sev.mid{background:rgba(255,183,77,.16);color:var(--amber)}
+.sev.hi{background:rgba(255,93,108,.16);color:var(--red-soft)}
+
+/* ---------- QUIZ (Module 8) ---------- */
+.quiz-monitor{background:#0a1119;border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:14px}
+.quiz-q{font-family:var(--display);font-weight:600;font-size:1.1rem;margin:6px 0 14px}
+.quiz-opts{display:grid;gap:9px}
+.qopt{
+  text-align:left;font-family:var(--body);font-size:.96rem;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel-soft);color:var(--ink);
+  border-radius:11px;padding:12px 15px;transition:.15s;
+}
+.qopt:hover{border-color:var(--muted2)}
+.qopt.correct{border-color:var(--green);background:rgba(52,246,168,.12);color:var(--green)}
+.qopt.wrong{border-color:var(--red);background:rgba(255,93,108,.1);color:var(--red-soft)}
+.qopt.disabled{pointer-events:none;opacity:.6}
+.quiz-fb{margin-top:14px;font-size:.95rem;padding:12px 15px;border-radius:11px;display:none}
+.quiz-fb.show{display:block}
+.quiz-fb.good{background:rgba(52,246,168,.08);border-left:3px solid var(--green);color:#cdeede}
+.quiz-fb.bad{background:rgba(255,93,108,.07);border-left:3px solid var(--red);color:#ffd6da}
+.quiz-progress{font-family:var(--mono);font-size:.82rem;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between}
+.quiz-score{font-family:var(--mono);color:var(--green);font-weight:600}
+
+/* footer nav */
+.pager{display:flex;justify-content:space-between;gap:12px;margin:26px 0 10px}
+.pager button{flex:1}
+footer.foot{text-align:center;color:var(--muted2);font-size:.8rem;padding:30px 18px;font-family:var(--mono)}
+
+.kbd{font-family:var(--mono);font-size:.8rem;background:var(--panel);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 7px;color:var(--ink)}
+.disclaimer{margin-top:20px;font-size:.82rem;color:var(--muted2);border:1px dashed var(--line);border-radius:12px;padding:14px 16px;background:rgba(255,255,255,.01)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <span class="kicker">Cardiologia · Aula Interativa</span>
+  <h1 class="title">Entenda o <span class="hl">ECG</span><br>do zero ao avançado</h1>
+  <p class="subtitle">Um curso visual e prático. Sem decoreba: você vai <em>ver</em> a eletricidade do coração virar onda, medir, calcular e reconhecer ritmos — clicando em tudo.</p>
+
+  <div class="hero-monitor">
+    <div class="hero-monitor-bar">
+      <span><span class="pulse-dot"></span> MONITOR · DII</span>
+      <span class="bpm" id="heroBpm">72 bpm · ritmo sinusal</span>
+    </div>
+    <svg viewBox="0 0 760 130" class="wave-svg" id="heroSvg" style="height:120px">
+      <path id="heroPath" fill="none" stroke="var(--green)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 6px var(--green-glow))"/>
+    </svg>
+  </div>
+</header>
+
+<nav class="modnav">
+  <div class="modnav-inner" id="modnav"></div>
+</nav>
+
+<main class="wrap" id="main"></main>
+
+<footer class="foot">
+  ECG do Zero · material educativo · feito para aprender clicando 💚<br>
+  Conteúdo de ensino — não substitui avaliação médica.
+</footer>
+
+<script>
+/* =========================================================
+   GERADOR DE TRAÇADO DE ECG
+   Coordenadas SVG: y cresce p/ baixo. baseline no meio.
+   ========================================================= */
+function beat(opts){
+  // retorna array de pontos {x,y} para 1 batimento, largura = opts.rr
+  const o = Object.assign({
+    rr: 120, base: 0, p: 7, pr: 16, q: 5, r: 42, s: 14, st: 18, t: 16, twave: 22, noP:false, st_elev:0, wideQRS:false, flat:false
+  }, opts);
+  const b = o.base;
+  if(o.flat) return [{x:0,y:b},{x:o.rr,y:b}];
+  const pts=[];
+  let x=0;
+  const push=(dx,y)=>{x+=dx;pts.push({x,y});};
+  pts.push({x:0,y:b});
+  // segmento inicial
+  push(o.rr*0.04, b);
+  if(!o.noP){
+    // onda P (curva suave aproximada por pontos)
+    push(o.rr*0.05, b-o.p*0.6);
+    push(o.rr*0.04, b-o.p);
+    push(o.rr*0.05, b-o.p*0.6);
+    push(o.rr*0.04, b);
+  } else {
+    push(o.rr*0.18, b);
+  }
+  // segmento PR
+  push(o.rr*0.07, b);
+  // QRS
+  const qrsW = o.wideQRS ? o.rr*0.14 : o.rr*0.055;
+  push(qrsW*0.3, b+o.q);          // Q desce
+  push(qrsW*0.35, b-o.r);         // R sobe (pico)
+  push(qrsW*0.5, b+o.s);          // S desce abaixo
+  push(qrsW*0.3, b);              // volta
+  // segmento ST (pode estar elevado)
+  push(o.rr*0.06, b-o.st_elev);
+  push(o.rr*0.05, b-o.st_elev);
+  // onda T
+  push(o.rr*0.05, b-o.st_elev-o.twave*0.55);
+  push(o.rr*0.05, b-o.st_elev-o.twave);
+  push(o.rr*0.05, b-o.st_elev-o.twave*0.55);
+  push(o.rr*0.04, b);
+  // resto da linha base
+  push(o.rr-x, b);
+  return pts;
+}
+
+function ptsToPath(pts){
+  return pts.map((p,i)=>(i===0?'M':'L')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ');
+}
+
+// gera traço repetido para preencher uma largura
+function ribbon(width, baseY, rrFn, beatFn){
+  let pts=[]; let cursor=0; let i=0;
+  while(cursor < width+150){
+    const rr = (typeof rrFn==='function')?rrFn(i):rrFn;
+    const local = beatFn(i, rr);
+    const shifted = local.map(p=>({x:p.x+cursor, y:p.y+baseY}));
+    pts=pts.concat(shifted);
+    cursor+=rr; i++;
+  }
+  return ptsToPath(pts);
+}
+
+/* ====== HERO traçado animado (scroll contínuo) ====== */
+(function(){
+  const baseY=65;
+  const w=760;
+  const path=document.getElementById('heroPath');
+  const full=ribbon(w*2, baseY, 120, (i,rr)=>beat({rr}));
+  path.setAttribute('d', full);
+  // animação de scroll
+  let off=0;
+  function tick(){
+    off=(off+1.6)% (760);
+    path.setAttribute('transform','translate('+(-off)+',0)');
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+/* =========================================================
+   CONTEÚDO DOS MÓDULOS
+   ========================================================= */
+const MODULES = [
+  {id:'intro', tab:'Início', num:'00', title:'Bem-vindo', icon:'👋'},
+  {id:'coracao', tab:'Coração elétrico', num:'01', title:'O coração é elétrico', icon:'⚡'},
+  {id:'onda', tab:'P-QRS-T', num:'02', title:'Como nasce a onda: P, QRS e T', icon:'〰️'},
+  {id:'papel', tab:'O papel', num:'03', title:'O papel quadriculado', icon:'📐'},
+  {id:'fc', tab:'Frequência', num:'04', title:'Calcular a frequência cardíaca', icon:'⏱️'},
+  {id:'derivacoes', tab:'12 Derivações', num:'05', title:'As 12 derivações', icon:'🎥'},
+  {id:'leitura', tab:'Leitura', num:'06', title:'Leitura sistemática (5 passos)', icon:'🔎'},
+  {id:'ritmos', tab:'Ritmos', num:'07', title:'Reconhecendo ritmos', icon:'🫀'},
+  {id:'quiz', tab:'Pratique', num:'08', title:'Hora de praticar', icon:'🎯'},
+];
+
+const main=document.getElementById('main');
+const modnav=document.getElementById('modnav');
+
+// monta nav
+MODULES.forEach((m,i)=>{
+  const b=document.createElement('button');
+  b.className='navbtn'+(i===0?' active':'');
+  b.dataset.go=m.id;
+  b.innerHTML='<span class="n">'+m.num+'</span>'+m.tab;
+  b.onclick=()=>goTo(m.id);
+  modnav.appendChild(b);
+});
+
+// containers de cada módulo
+MODULES.forEach((m,i)=>{
+  const sec=document.createElement('section');
+  sec.className='module'+(i===0?' show':'');
+  sec.id='mod-'+m.id;
+  sec.innerHTML='<div class="mod-head"><span class="mod-num">MÓDULO '+m.num+'</span>'+
+                '<h2 class="mod-title">'+m.icon+' '+m.title+'</h2></div>'+
+                '<div class="mod-body"></div>'+
+                pager(i);
+  main.appendChild(sec);
+});
+
+function pager(i){
+  const prev = i>0 ? '<button class="btn ghost" onclick="goTo(\''+MODULES[i-1].id+'\')">‹ '+MODULES[i-1].tab+'</button>' : '<span></span>';
+  const next = i<MODULES.length-1 ? '<button class="btn" onclick="goTo(\''+MODULES[i+1].id+'\')">'+MODULES[i+1].tab+' ›</button>' : '<span></span>';
+  return '<div class="pager">'+prev+next+'</div>';
+}
+
+function goTo(id){
+  document.querySelectorAll('.module').forEach(s=>s.classList.remove('show'));
+  document.getElementById('mod-'+id).classList.add('show');
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active', b.dataset.go===id));
+  const active=document.querySelector('.navbtn[data-go="'+id+'"]');
+  if(active) active.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+const body = id => document.querySelector('#mod-'+id+' .mod-body');
+
+/* ---------------- MÓDULO 0: INTRO ---------------- */
+body('intro').innerHTML = `
+  <p class="mod-intro">Aprender ECG parece difícil porque tem muito nome estranho. Mas no fundo é simples: o coração solta uma <strong>corrente elétrica</strong> a cada batida, e o aparelho só <strong>desenha</strong> essa corrente em papel. Você vai entender cada risquinho.</p>
+  <div class="card">
+    <h3><span class="ic">🗺️</span> O caminho que vamos percorrer</h3>
+    <p>Vá na ordem, ou pule pelos botões lá em cima. Cada módulo tem algo pra você <strong>clicar, arrastar ou animar</strong>.</p>
+    <div class="leads-wrap" style="margin-top:14px">
+      <div class="lead-grid" id="introGrid" style="grid-template-columns:repeat(2,1fr)"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">🧠</span> A ideia central (guarde isto!)</h3>
+    <p class="lead">Toda batida do coração é uma <strong>onda elétrica viajando</strong>. Quando a eletricidade vem <strong>na direção</strong> de um eletrodo → o aparelho desenha pra <strong>cima</strong>. Quando vai <strong>se afastando</strong> → desenha pra <span class="rd">baixo</span>. Só isso explica 90% do ECG.</p>
+    <div class="tip"><b>Analogia:</b> imagine um barquinho na água. Se ele vem <em>na sua direção</em>, a onda chega até você (sobe). Se vai embora, a onda foge (desce). O eletrodo é "você" olhando o coração.</div>
+  </div>
+  <div class="disclaimer">⚠️ Este é um material <b>educativo</b> para aprender os conceitos. Decisões clínicas reais exigem avaliação médica e o traçado completo do paciente.</div>
+`;
+(function(){
+  const g=document.getElementById('introGrid');
+  MODULES.slice(1).forEach(m=>{
+    const d=document.createElement('button');
+    d.className='leadbtn';
+    d.style.textAlign='left';d.style.padding='13px 14px';
+    d.innerHTML=m.icon+' '+m.title+'<small>Módulo '+m.num+'</small>';
+    d.onclick=()=>goTo(m.id);
+    g.appendChild(d);
+  });
+})();
+
+/* ---------------- MÓDULO 1: CORAÇÃO ELÉTRICO ---------------- */
+body('coracao').innerHTML = `
+  <p class="mod-intro">O coração tem um "sistema elétrico" próprio, como uma fiação. A corrente nasce sempre no mesmo lugar e percorre sempre o mesmo caminho. Aperte <strong>▶ Animar</strong> e veja a faísca viajar.</p>
+  <div class="card">
+    <h3><span class="ic">⚡</span> O caminho da corrente</h3>
+    <div class="heart-stage">
+      <div class="heart-svg-box">
+        <svg viewBox="0 0 240 280" style="width:100%;height:auto">
+          <!-- silhueta do coração -->
+          <path d="M120 255 C40 195 25 120 60 85 C85 58 120 80 120 105 C120 80 155 58 180 85 C215 120 200 195 120 255 Z"
+                fill="#16222f" stroke="#26415a" stroke-width="2"/>
+          <!-- câmaras (linhas) -->
+          <path d="M120 105 L120 230" stroke="#26415a" stroke-width="1.5" opacity=".6"/>
+          <!-- vias de condução -->
+          <path id="pathSA-AV" d="M152 96 Q130 120 122 150" fill="none" stroke="#2a4357" stroke-width="3"/>
+          <path id="pathHis" d="M122 150 L122 178" fill="none" stroke="#2a4357" stroke-width="3"/>
+          <path id="pathPurk-L" d="M122 178 Q95 205 80 232" fill="none" stroke="#2a4357" stroke-width="3"/>
+          <path id="pathPurk-R" d="M122 178 Q150 205 165 232" fill="none" stroke="#2a4357" stroke-width="3"/>
+          <!-- nós -->
+          <circle id="nSA" cx="152" cy="92" r="9" fill="#2a4357"/>
+          <circle id="nAV" cx="122" cy="150" r="8" fill="#2a4357"/>
+          <circle id="nHis" cx="122" cy="178" r="6" fill="#2a4357"/>
+          <circle id="nPL" cx="80" cy="232" r="6" fill="#2a4357"/>
+          <circle id="nPR" cx="165" cy="232" r="6" fill="#2a4357"/>
+          <!-- faísca móvel -->
+          <circle id="spark" cx="152" cy="92" r="7" fill="var(--green)" opacity="0" style="filter:drop-shadow(0 0 8px var(--green))"/>
+          <text x="172" y="86" fill="#8aa3b5" font-size="11" font-family="IBM Plex Mono">nó SA</text>
+          <text x="132" y="146" fill="#8aa3b5" font-size="11" font-family="IBM Plex Mono">nó AV</text>
+        </svg>
+      </div>
+      <div>
+        <div class="node-list" id="nodeList"></div>
+        <div class="ctrl-row">
+          <button class="btn" id="playHeart">▶ Animar batida</button>
+          <button class="btn ghost" id="loopHeart">↻ Repetir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">🔁</span> Por que esse caminho importa?</h3>
+    <p>Cada etapa vira um pedaço do desenho do ECG. Olha a correspondência:</p>
+    <div class="method-grid" style="margin-top:10px">
+      <div class="method"><div class="mname">Nó SA → átrios</div><div class="calc">= onda P</div><small>os átrios contraem</small></div>
+      <div class="method"><div class="mname">Nó AV (freada)</div><div class="calc">= intervalo PR</div><small>pausa proposital</small></div>
+      <div class="method"><div class="mname">His + Purkinje → ventrículos</div><div class="calc">= complexo QRS</div><small>a "pancada" forte</small></div>
+      <div class="method"><div class="mname">Ventrículos "recarregam"</div><div class="calc">= onda T</div><small>repolarização</small></div>
+    </div>
+    <div class="tip"><b>Por que o nó AV "freia"?</b> Para dar tempo dos átrios esvaziarem o sangue nos ventrículos <em>antes</em> deles bombearem. É uma pausa de segurança.</div>
+  </div>
+`;
+(function(){
+  const nodes=[
+    {el:'nSA', name:'1 · Nó Sinusal (SA)', desc:'O "maestro". Fica no átrio direito e dá o ritmo. É ele que decide a frequência — por isso "ritmo sinusal" é o ritmo normal.'},
+    {el:'nAV', name:'2 · Nó Atrioventricular (AV)', desc:'O "porteiro". Recebe a corrente e a segura por um instante (a pausa de segurança) antes de liberar para os ventrículos.'},
+    {el:'nHis', name:'3 · Feixe de His', desc:'A "auto-estrada". Conduz a corrente rapidamente para baixo, em direção aos dois ventrículos.'},
+    {el:'nPL', name:'4 · Fibras de Purkinje', desc:'A "fiação fina". Espalham a corrente por todo o músculo ventricular ao mesmo tempo → contração forte e sincronizada.'},
+  ];
+  const list=document.getElementById('nodeList');
+  nodes.forEach((n,i)=>{
+    const d=document.createElement('div');d.className='node';d.dataset.i=i;
+    d.innerHTML='<span class="dot"></span><div><h4>'+n.name+'</h4><small>'+n.desc+'</small></div>';
+    list.appendChild(d);
+  });
+  const seq=[
+    {node:0, els:['nSA'], spark:[152,92], label:'Faísca nasce no nó SA → átrios despolarizam (onda P)'},
+    {node:1, els:['nAV'], spark:[122,150], label:'Chega no nó AV → freada (intervalo PR)'},
+    {node:2, els:['nHis'], spark:[122,178], label:'Desce pelo feixe de His'},
+    {node:3, els:['nPL','nPR'], spark:[122,232], label:'Purkinje espalha → ventrículos contraem (QRS)'},
+  ];
+  const spark=document.getElementById('spark');
+  let timer=null, looping=false;
+  function reset(){
+    document.querySelectorAll('.node').forEach(n=>n.classList.remove('active'));
+    ['nSA','nAV','nHis','nPL','nPR'].forEach(id=>document.getElementById(id).setAttribute('fill','#2a4357'));
+    document.getElementById('heroBpm').textContent='72 bpm · ritmo sinusal';
+    spark.setAttribute('opacity','0');
+  }
+  function step(k){
+    reset();
+    if(k>=seq.length){ if(looping){ timer=setTimeout(()=>step(0),700);} return; }
+    const s=seq[k];
+    document.querySelectorAll('.node')[s.node].classList.add('active');
+    s.els.forEach(id=>document.getElementById(id).setAttribute('fill','var(--green)'));
+    spark.setAttribute('opacity','1');
+    spark.setAttribute('cx',s.spark[0]); spark.setAttribute('cy',s.spark[1]);
+    document.getElementById('heroBpm').textContent=s.label;
+    timer=setTimeout(()=>step(k+1),1050);
+  }
+  document.getElementById('playHeart').onclick=()=>{looping=false;clearTimeout(timer);step(0);};
+  document.getElementById('loopHeart').onclick=function(){
+    looping=!looping; this.textContent=looping?'⏸ Parar':'↻ Repetir';
+    clearTimeout(timer); if(looping) step(0); else reset();
+  };
+})();
+
+/* ---------------- MÓDULO 2: P-QRS-T ---------------- */
+body('onda').innerHTML = `
+  <p class="mod-intro">Agora a parte mais importante. Cada batida desenha sempre as mesmas peças: <strong>P</strong>, depois o complexo <strong>QRS</strong>, depois <strong>T</strong>. Clique em qualquer peça do traçado (ou nos botões coloridos) para entender o que é.</p>
+  <div class="card">
+    <h3><span class="ic">〰️</span> O complexo PQRST — clique para explorar</h3>
+    <div class="wave-box">
+      <svg viewBox="0 0 600 260" class="wave-svg" id="pqrstSvg">
+        <line x1="0" y1="170" x2="600" y2="170" stroke="#1f3346" stroke-width="1" stroke-dasharray="4 4"/>
+        <path id="pqrstPath" fill="none" stroke="var(--green)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 5px var(--green-glow))"/>
+        <g id="segHighlights"></g>
+        <g id="segLabels"></g>
+      </svg>
+    </div>
+    <div class="wave-legend" id="waveLegend"></div>
+    <div class="wave-explain" id="waveExplain">
+      <div class="et">👆 Toque numa peça da onda</div>
+      <div style="color:var(--muted)">Cada parte conta um pedaço da história elétrica de uma batida.</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">🧩</span> Resumo de bolso</h3>
+    <p><strong>P</strong> = átrios "ligam" &nbsp;·&nbsp; <strong>QRS</strong> = ventrículos "ligam" (a batida forte) &nbsp;·&nbsp; <strong>T</strong> = ventrículos "desligam/recarregam".</p>
+    <div class="tip"><b>Por que o QRS é o maior?</b> Os ventrículos têm muito mais músculo que os átrios. Mais músculo = mais eletricidade = desenho maior.</div>
+    <div class="tip warn"><b>E a repolarização dos átrios?</b> Existe, mas é pequena e fica "escondida" debaixo do QRS, que é gigante. Por isso a gente nem vê.</div>
+  </div>
+`;
+(function(){
+  // desenha 1 complexo grande
+  const baseY=170, scale=2.0;
+  const pts=beat({rr:600, base:170, p:7*scale, r:42*scale, s:14*scale, q:5*scale, twave:22*scale});
+  document.getElementById('pqrstPath').setAttribute('d', ptsToPath(pts));
+
+  const segments={
+    P:   {color:'var(--green)', range:[20,150],  title:'Onda P', val:'≈ 0,08–0,11 s · pequena',
+          txt:'É a despolarização dos <b>átrios</b> — eles "ligam" e se contraem. Pequena e arredondada porque os átrios têm pouco músculo. Vem do nó SA, por isso sua presença = ritmo provavelmente sinusal.'},
+    PR:  {color:'var(--blue)', range:[60,250], title:'Intervalo PR', val:'0,12–0,20 s (3–5 quadradinhos)',
+          txt:'Do início do P até o início do QRS. Representa a <b>pausa no nó AV</b>. Se está muito longo → a corrente está "presa no trânsito" (bloqueio AV).'},
+    QRS: {color:'var(--green)', range:[250,330], title:'Complexo QRS', val:'< 0,12 s (até 3 quadradinhos)',
+          txt:'A despolarização dos <b>ventrículos</b> — a batida forte que ejeta o sangue. Estreito e pontudo no normal. Se ficar <b>largo</b> → a corrente está fazendo um caminho anormal/lento.'},
+    ST:  {color:'var(--amber)', range:[330,400], title:'Segmento ST', val:'deve estar na linha de base',
+          txt:'A "pausa" entre o QRS e o T. Deve ficar <b>na linha</b>. Se sobe (supra) ou desce (infra) demais → pode ser sinal de <b>infarto/isquemia</b>. Ponto de ouro do plantão!'},
+    T:   {color:'var(--violet)', range:[400,500], title:'Onda T', val:'arredondada, assimétrica',
+          txt:'A repolarização dos <b>ventrículos</b> — eles "recarregam" para a próxima batida. Geralmente positiva. T apontada/simétrica ou invertida pode indicar problemas (ex.: potássio, isquemia).'},
+    QT:  {color:'var(--red)', range:[250,500], title:'Intervalo QT', val:'≈ 0,35–0,44 s',
+          txt:'Do início do QRS ao fim do T = tempo total de contração + recarga dos ventrículos. Um QT <b>muito longo</b> pode predispor a arritmias graves.'},
+  };
+  const order=['P','PR','QRS','ST','T','QT'];
+  const leg=document.getElementById('waveLegend');
+  order.forEach(k=>{
+    const s=segments[k];
+    const c=document.createElement('button');
+    c.className='legchip';c.style.color=s.color;c.dataset.k=k;
+    c.innerHTML='<span class="lab">'+(k==='PR'||k==='QT'?'⟷ '+k:k)+'</span><span class="sub">'+s.title.replace(/^(Onda |Complexo |Segmento |Intervalo )/,'')+'</span>';
+    c.onclick=()=>select(k);
+    leg.appendChild(c);
+  });
+  const hi=document.getElementById('segHighlights');
+  const ex=document.getElementById('waveExplain');
+  function select(k){
+    const s=segments[k];
+    document.querySelectorAll('.legchip').forEach(c=>c.classList.toggle('on',c.dataset.k===k));
+    hi.innerHTML='<rect x="'+s.range[0]+'" y="20" width="'+(s.range[1]-s.range[0])+'" height="220" fill="'+s.color+'" opacity="0.13" rx="6"/>';
+    ex.style.borderColor=s.color;
+    ex.innerHTML='<div class="et" style="color:'+s.color+'">'+s.title+'</div><div class="ev">'+s.val+'</div><div style="color:#cdddd5">'+s.txt+'</div>';
+  }
+  // clique direto no SVG: detecta região por x
+  document.getElementById('pqrstSvg').addEventListener('click',e=>{
+    const svg=e.currentTarget; const r=svg.getBoundingClientRect();
+    const x=(e.clientX-r.left)/r.width*600;
+    let pick='QRS';
+    if(x<150)pick='P'; else if(x<250)pick='PR'; else if(x<330)pick='QRS'; else if(x<400)pick='ST'; else pick='T';
+    select(pick);
+  });
+  select('P');
+})();
+
+/* ---------------- MÓDULO 3: PAPEL ---------------- */
+body('papel').innerHTML = `
+  <p class="mod-intro">O ECG é desenhado num papel quadriculado padrão no mundo todo. Entender o quadradinho = saber medir tempo e voltagem. É a régua que destrava tudo.</p>
+  <div class="card">
+    <h3><span class="ic">📐</span> O quadriculado padrão</h3>
+    <div class="paper">
+      <svg viewBox="0 0 600 200">
+        <path id="paperWave" fill="none" stroke="#b3261e" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        <!-- régua de tempo -->
+        <line x1="40" y1="180" x2="80" y2="180" stroke="#1f4fd8" stroke-width="2"/>
+        <text x="42" y="195" fill="#1f4fd8" font-size="10" font-family="IBM Plex Mono">0,2s</text>
+      </svg>
+    </div>
+    <div class="measure-grid">
+      <div class="measure-card">
+        <div class="lab">⟷ Eixo horizontal = TEMPO</div>
+        <p style="margin:8px 0;color:#cdddd5;font-size:.92rem"><span class="sq"></span> 1 quadradinho = <strong>0,04 s</strong> (40 ms)</p>
+        <p style="color:#cdddd5;font-size:.92rem"><span class="sqb"></span> 1 quadradão (5×5) = <strong>0,20 s</strong></p>
+        <div class="big">0,04 s</div><div class="lab">por quadrado pequeno</div>
+      </div>
+      <div class="measure-card">
+        <div class="lab">↕ Eixo vertical = VOLTAGEM</div>
+        <p style="margin:8px 0;color:#cdddd5;font-size:.92rem"><span class="sq"></span> 1 quadradinho = <strong>0,1 mV</strong></p>
+        <p style="color:#cdddd5;font-size:.92rem"><span class="sqb"></span> 1 quadradão = <strong>0,5 mV</strong></p>
+        <div class="big">25 mm/s</div><div class="lab">velocidade do papel</div>
+      </div>
+    </div>
+    <div class="tip"><b>Truque mental:</b> o papel corre a <strong>25 mm por segundo</strong>. Como cada quadradão tem 5mm, ele "anda" <strong>5 quadradões por segundo</strong>. Ou seja: 1 quadradão = 0,2s → 5 deles = 1 segundo.</div>
+    <div class="tip"><b>Pra que serve?</b> Medindo quantos quadradinhos uma onda ocupa, você descobre sua <em>duração</em> (largura) e sua <em>força</em> (altura). É assim que se diz "QRS largo" ou "PR longo".</div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">🧪</span> Exemplo prático</h3>
+    <p>Um QRS normal dura <strong>menos que 0,12s</strong>. Em quadradinhos, isso é menos que <strong>3</strong> (3 × 0,04 = 0,12). Se você contar o QRS ocupando 4–5 quadradinhos → ele está <span class="rd">largo</span>, e isso tem significado clínico.</p>
+  </div>
+`;
+(function(){
+  const pts=beat({rr:300, base:120, p:7, r:55, s:16, q:6, twave:24});
+  const full=ptsToPath(pts)+' '+ptsToPath(beat({rr:300, base:120, p:7, r:55, s:16, q:6, twave:24}).map(p=>({x:p.x+300,y:p.y})));
+  document.getElementById('paperWave').setAttribute('d', full);
+})();
+
+/* ---------------- MÓDULO 4: FREQUÊNCIA ---------------- */
+body('fc').innerHTML = `
+  <p class="mod-intro">Frequência cardíaca = quantas batidas por minuto (bpm). No ECG, medimos a distância entre dois picos R (a distância <strong>R-R</strong>). Arraste o controle e veja a frequência mudar em tempo real.</p>
+  <div class="card">
+    <h3><span class="ic">⏱️</span> Laboratório da frequência</h3>
+    <div class="calc-monitor">
+      <div class="rm-top"><span class="rm-name" id="fcLabel">Ritmo sinusal normal</span><span class="rm-bpm">DII · 25 mm/s</span></div>
+      <svg viewBox="0 0 600 150" class="wave-svg" id="fcSvg" style="height:140px">
+        <path id="fcPath" fill="none" stroke="var(--green)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 5px var(--green-glow))"/>
+        <g id="fcMarkers"></g>
+      </svg>
+      <div class="calc-readout"><span class="num" id="fcNum">75</span><span class="unit">bpm</span></div>
+      <div class="slider-row">
+        <label><span>Distância entre batidas (R-R)</span><span id="rrLabel">0,80 s</span></label>
+        <input type="range" id="rrSlider" min="33" max="220" value="80">
+      </div>
+    </div>
+    <div class="method-grid">
+      <div class="method">
+        <div class="mname">Método dos 300</div>
+        <div class="calc" id="m300">300 ÷ 4 = 75</div>
+        <small>300 ÷ (quadradões entre dois R). Rápido e o mais usado.</small>
+      </div>
+      <div class="method">
+        <div class="mname">Método dos 1500</div>
+        <div class="calc" id="m1500">1500 ÷ 20 = 75</div>
+        <small>1500 ÷ (quadradinhos entre dois R). Mais preciso.</small>
+      </div>
+      <div class="method">
+        <div class="mname">Método dos 6 segundos</div>
+        <div class="calc" id="m6s">9 × 10 = 90</div>
+        <small>Conte QRS em 6s (30 quadradões) e ×10. Bom para ritmo irregular.</small>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">📊</span> Os valores que importam</h3>
+    <div class="method-grid">
+      <div class="method"><div class="mname bl">Bradicardia</div><div class="calc" style="color:var(--blue)">&lt; 60 bpm</div><small>"coração lento"</small></div>
+      <div class="method"><div class="mname">Normal</div><div class="calc">60–100 bpm</div><small>faixa esperada em repouso</small></div>
+      <div class="method"><div class="mname rd">Taquicardia</div><div class="calc" style="color:var(--red)">&gt; 100 bpm</div><small>"coração acelerado"</small></div>
+    </div>
+    <div class="tip"><b>Memorize a sequência mágica do método dos 300:</b> se os R caem em linhas de quadradão seguidas, a frequência é <strong>300 – 150 – 100 – 75 – 60 – 50</strong>. Decore esses 6 números e você estima a FC só de olhar!</div>
+  </div>
+`;
+(function(){
+  const slider=document.getElementById('rrSlider');
+  const W=600, baseY=90;
+  function draw(rrPx){
+    // rrPx em pixels. Mapeamos px -> tempo: assumimos 600px = ~2.4s p/ visual
+    const path=ribbon(W, baseY, rrPx, (i,rr)=>beat({rr, base:0, p:6, r:48, s:14, q:5, twave:20}));
+    document.getElementById('fcPath').setAttribute('d', path);
+    // marcadores R (linhas verticais nos picos R) — pico R ~ posição relativa dentro do beat
+    let mk='',x=0,i=0;
+    while(x<W){ const rx=x+rrPx*0.235; if(rx<W) mk+='<line x1="'+rx.toFixed(0)+'" y1="10" x2="'+rx.toFixed(0)+'" y2="140" stroke="var(--amber)" stroke-width="1" stroke-dasharray="3 4" opacity=".55"/>'; x+=rrPx;i++;}
+    document.getElementById('fcMarkers').innerHTML=mk;
+  }
+  function update(){
+    // valor do slider = tempo R-R em centésimos de segundo (33 = 0,33s -> 180bpm; 220 = 2,2s -> 27bpm)
+    const rrSec = (+slider.value)/100;
+    const bpm = Math.round(60/rrSec);
+    const num=document.getElementById('fcNum');
+    num.textContent=bpm; num.className='num'+(bpm>100?' tachy':bpm<60?' brady':'');
+    document.getElementById('rrLabel').textContent=rrSec.toFixed(2).replace('.',',')+' s';
+    document.getElementById('fcLabel').textContent = bpm>100?'Taquicardia':bpm<60?'Bradicardia':'Ritmo sinusal normal';
+    // métodos
+    const bigSq=(rrSec/0.2);            // quadradões
+    const smallSq=(rrSec/0.04);         // quadradinhos
+    document.getElementById('m300').textContent='300 ÷ '+bigSq.toFixed(1)+' = '+Math.round(300/bigSq);
+    document.getElementById('m1500').textContent='1500 ÷ '+smallSq.toFixed(0)+' = '+Math.round(1500/smallSq);
+    const in6=Math.round(6/rrSec);
+    document.getElementById('m6s').textContent=in6+' × 10 = '+(in6*10);
+    // desenho: largura visual proporcional (limita p/ não ficar minúsculo)
+    const rrPx = Math.max(70, Math.min(300, rrSec*150));
+    draw(rrPx);
+  }
+  slider.addEventListener('input',update);
+  update();
+})();
+
+/* ---------------- MÓDULO 5: DERIVAÇÕES ---------------- */
+body('derivacoes').innerHTML = `
+  <p class="mod-intro">"Derivação" é só um <strong>ângulo de câmera</strong> olhando o coração. O ECG normal usa <strong>12 câmeras</strong> ao mesmo tempo. Cada uma vê uma parede do coração. Clique numa derivação para saber o que ela "filma".</p>
+  <div class="card">
+    <h3><span class="ic">🎥</span> 12 câmeras, 1 coração</h3>
+    <div class="lead-grp">Plano frontal · derivações dos membros</div>
+    <div class="lead-grid" id="limbLeads"></div>
+    <div class="lead-grp" style="margin-top:16px">Plano horizontal · derivações precordiais (peito)</div>
+    <div class="lead-grid" id="precordLeads"></div>
+    <div class="lead-info" id="leadInfo" style="margin-top:16px">
+      <div class="li-t">👆 Escolha uma derivação</div>
+      <div style="color:var(--muted)">Cada uma mostra uma "parede" diferente do coração.</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">🧭</span> A grande sacada</h3>
+    <p>Por que tantas câmeras? Porque um infarto, por exemplo, atinge <em>uma região</em> do coração. Se só a parede de baixo (inferior) infartou, só as câmeras que olham pra baixo (<strong>DII, DIII, aVF</strong>) mostram a alteração. As outras parecem normais. <strong>Agrupar as derivações por parede</strong> é como o médico localiza onde está o problema.</p>
+    <div class="tip"><b>Os 4 territórios principais:</b> <span class="rd">Inferior</span> (DII, DIII, aVF) · <span class="bl">Septal</span> (V1, V2) · <strong>Anterior</strong> (V3, V4) · <span class="an">Lateral</span> (DI, aVL, V5, V6).</div>
+  </div>
+`;
+(function(){
+  const limb=[
+    {n:'DI', t:'Derivação I', grp:'Lateral alta', terr:true, txt:'Olha o coração da esquerda, na horizontal. Faz parte da parede lateral.'},
+    {n:'DII', t:'Derivação II', grp:'Inferior', txt:'A "queridinha". Olha de cima pra baixo-esquerda, alinhada com o fluxo elétrico normal → P bem visível. É a derivação preferida pra ver o ritmo.'},
+    {n:'DIII', t:'Derivação III', grp:'Inferior', txt:'Também olha a parede de baixo (inferior) do coração.'},
+    {n:'aVR', t:'aVR', grp:'(referência)', txt:'Olha o coração "de fora", do ombro direito. No normal, quase tudo fica negativo (de cabeça pra baixo). Serve de checagem: se aVR estiver positivo, talvez os eletrodos estejam trocados.'},
+    {n:'aVL', t:'aVL', grp:'Lateral alta', terr:true, txt:'Olha a parede lateral alta, do ombro esquerdo.'},
+    {n:'aVF', t:'aVF', grp:'Inferior', txt:'Aponta direto pra baixo (F = foot/pé). Parede inferior.'},
+  ];
+  const prec=[
+    {n:'V1', t:'V1', grp:'Septal', txt:'No peito, à direita do esterno. Olha o septo e o ventrículo direito. Ótima pra analisar ritmo e bloqueios de ramo.'},
+    {n:'V2', t:'V2', grp:'Septal', txt:'À esquerda do esterno. Junto com V1, vê a parede septal.'},
+    {n:'V3', t:'V3', grp:'Anterior', txt:'Transição. Parede anterior do coração.'},
+    {n:'V4', t:'V4', grp:'Anterior', txt:'Sobre a ponta do coração (ápice). Parede anterior.'},
+    {n:'V5', t:'V5', grp:'Lateral', terr:true, txt:'Mais pra lateral esquerda. Parede lateral.'},
+    {n:'V6', t:'V6', grp:'Lateral', terr:true, txt:'Na linha da axila. Parede lateral baixa.'},
+  ];
+  function fill(container, arr){
+    arr.forEach(l=>{
+      const b=document.createElement('button');
+      b.className='leadbtn'+(l.terr?' ':'');b.dataset.terr=l.terr?'1':'';
+      b.innerHTML=l.n+'<small>'+l.grp+'</small>';
+      b.onclick=()=>{
+        document.querySelectorAll('.leadbtn').forEach(x=>x.classList.remove('on','terr'));
+        b.classList.add('on'); if(l.terr)b.classList.add('terr');
+        document.getElementById('leadInfo').innerHTML='<div class="li-t">'+l.t+' · <span style="color:var(--muted);font-size:.8rem">'+l.grp+'</span></div><div style="color:#cdddd5">'+l.txt+'</div>';
+      };
+      container.appendChild(b);
+    });
+  }
+  fill(document.getElementById('limbLeads'),limb);
+  fill(document.getElementById('precordLeads'),prec);
+})();
+
+/* ---------------- MÓDULO 6: LEITURA SISTEMÁTICA ---------------- */
+body('leitura').innerHTML = `
+  <p class="mod-intro">A diferença entre quem se perde no ECG e quem lê com segurança é <strong>ter um roteiro fixo</strong>. Sempre a mesma ordem, todo ECG, sem pular passo. Clique em cada passo para abrir.</p>
+  <div class="card">
+    <h3><span class="ic">🔎</span> O roteiro dos 5 passos</h3>
+    <div class="steps" id="stepsBox"></div>
+  </div>
+  <div class="card">
+    <h3><span class="ic">✅</span> Por que sempre na mesma ordem?</h3>
+    <p>Porque sob pressão (no plantão, na prova) a gente esquece. Um roteiro fixo vira <strong>piloto automático</strong>: você nunca deixa de checar o ritmo, nunca esquece de medir o PR. Repita até virar reflexo.</p>
+    <div class="tip"><b>Frase-âncora:</b> "<strong>Ritmo, Frequência, Eixo, Ondas, Conclusão</strong>". Cinco palavras. Se decorar isso, já tem o esqueleto de qualquer laudo.</div>
+  </div>
+`;
+(function(){
+  const steps=[
+    {h:'Ritmo — é regular e sinusal?', q:'Tem onda P antes de cada QRS? Os intervalos R-R são iguais?',
+     d:'Comece perguntando: existe uma onda P antes de cada QRS, e cada P "gera" um QRS? Se sim e regular → ritmo sinusal (o normal). Se os R-R são muito irregulares ou faltam ondas P → suspeite de arritmia (ex.: fibrilação atrial).'},
+    {h:'Frequência — quantos bpm?', q:'Use o método dos 300 (300 ÷ quadradões entre R-R).',
+     d:'Calcule a frequência (visto no módulo 4). Classifique: <60 bradicardia, 60–100 normal, >100 taquicardia. Em ritmo irregular, prefira o método dos 6 segundos.'},
+    {h:'Eixo — pra onde aponta a corrente?', q:'Olhe DI e aVF: ambos positivos = eixo normal.',
+     d:'O "eixo" é a direção média da eletricidade dos ventrículos. Atalho: se o QRS é positivo (pra cima) em <b>DI</b> e em <b>aVF</b>, o eixo está normal. Desvios podem indicar sobrecarga, bloqueios ou variações anatômicas.'},
+    {h:'Ondas e intervalos — meça tudo', q:'P, PR, QRS, ST, QT, T — cada um dentro do normal?',
+     d:'Vá peça por peça: onda P normal? Intervalo PR entre 0,12–0,20s? QRS estreito (<0,12s)? Segmento ST na linha (sem supra/infra)? Onda T normal? QT não muito longo? Aqui moram a maioria dos diagnósticos.'},
+    {h:'Conclusão — junte as peças', q:'Compare com ECGs antigos e com o paciente!',
+     d:'Some os achados num laudo: ritmo + frequência + alterações. Lembre: o ECG é uma foto de poucos segundos. Sempre interprete junto com o paciente (sintomas, dor no peito) e, se possível, com traçados anteriores.'},
+  ];
+  const box=document.getElementById('stepsBox');
+  steps.forEach(s=>{
+    const d=document.createElement('div');d.className='step';
+    d.innerHTML='<h4>'+s.h+'</h4><div class="q">'+s.q+'</div><div class="sd">'+s.d+'</div>';
+    d.onclick=()=>d.classList.toggle('open');
+    box.appendChild(d);
+  });
+})();
+
+/* ---------------- MÓDULO 7: RITMOS ---------------- */
+body('ritmos').innerHTML = `
+  <p class="mod-intro">Hora de juntar tudo. Aqui está um banco de ritmos com traçado <strong>animado de verdade</strong>, como num monitor. Toque nos botões e compare. Comece pelo normal e vá descendo na gravidade.</p>
+  <div class="card">
+    <h3><span class="ic">🫀</span> Banco de ritmos — monitor ao vivo</h3>
+    <div class="rhythm-tabs" id="rhythmTabs"></div>
+    <div class="rhythm-monitor" id="rhythmMonitor">
+      <div class="rm-top"><span class="rm-name" id="rmName">Ritmo Sinusal Normal</span><span class="rm-bpm" id="rmBpm">75 bpm</span></div>
+      <svg viewBox="0 0 760 130" class="wave-svg" style="height:120px">
+        <path id="rhythmPath" fill="none" stroke="var(--green)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 6px var(--green-glow))"/>
+      </svg>
+    </div>
+    <div class="rhythm-desc" id="rhythmDesc"></div>
+  </div>
+`;
+(function(){
+  const W=1520, baseY=65; // dobro da largura visível p/ scroll
+  // cada ritmo: função que gera o caminho + descrição
+  const rhythms={
+    sinusal:{name:'Ritmo Sinusal Normal', bpm:'75 bpm', sev:'ok', danger:false,
+      build:()=>ribbon(W,baseY,150,(i,rr)=>beat({rr})),
+      desc:{t:'Ritmo Sinusal Normal', sev:'NORMAL', items:[
+        'Onda P antes de cada QRS (clara e arredondada)',
+        'R-R regular, igualzinho entre as batidas',
+        'Frequência entre 60 e 100 bpm',
+        'É o ritmo que você quer ver — coração funcionando certinho']}},
+    taqui:{name:'Taquicardia Sinusal', bpm:'130 bpm', sev:'mid', danger:false,
+      build:()=>ribbon(W,baseY,88,(i,rr)=>beat({rr,r:40})),
+      desc:{t:'Taquicardia Sinusal', sev:'ATENÇÃO', items:[
+        'Tudo normal, mas <b>acelerado</b> (&gt;100 bpm)',
+        'Ainda tem P antes de cada QRS, R-R regular',
+        'Causas comuns: febre, dor, exercício, susto, desidratação',
+        'Geralmente é resposta a algo — trate a causa']}},
+    bradi:{name:'Bradicardia Sinusal', bpm:'45 bpm', sev:'mid', danger:false,
+      build:()=>ribbon(W,baseY,250,(i,rr)=>beat({rr})),
+      desc:{t:'Bradicardia Sinusal', sev:'ATENÇÃO', items:[
+        'Tudo normal, mas <b>lento</b> (&lt;60 bpm)',
+        'R-R muito espaçado e regular',
+        'Pode ser normal em atletas; ou sinal de problema',
+        'Importa se causa tontura, desmaio ou cansaço']}},
+    fa:{name:'Fibrilação Atrial', bpm:'~110 bpm · irregular', sev:'hi', danger:false,
+      build:()=>{ let seeds=[120,170,95,140,200,110,160,90,180,130];
+        return ribbon(W,baseY,(i)=>seeds[i%seeds.length],(i,rr)=>beat({rr,noP:true,p:0,r:40})); },
+      desc:{t:'Fibrilação Atrial (FA)', sev:'IMPORTANTE', items:[
+        '<b>Sem ondas P</b> — os átrios "tremem" em vez de bater',
+        'R-R <b>totalmente irregular</b> (irregularmente irregular)',
+        'Linha de base "tremida" entre os QRS',
+        'Risco de formar coágulo → AVC. Arritmia muito comum']}},
+    flutter:{name:'Flutter Atrial', bpm:'~150 bpm', sev:'hi', danger:false,
+      build:()=>{
+        // sawtooth atrial + QRS a cada 2 ondas
+        let pts=[],x=0;const push=(dx,y)=>{x+=dx;pts.push({x,y:baseY+y});};
+        pts.push({x:0,y:baseY});
+        while(x<W){
+          // 2 "dentes de serra" F
+          for(let k=0;k<2;k++){push(18,-2);push(18,16);}
+          // QRS
+          push(8,5);push(7,-44);push(9,14);push(6,0);push(20,0);
+        }
+        return ptsToPath(pts);
+      },
+      desc:{t:'Flutter Atrial', sev:'IMPORTANTE', items:[
+        'Linha de base em <b>dente de serra</b> (ondas F regulares)',
+        'Os átrios disparam ~300x/min, mas o nó AV bloqueia parte',
+        'Costuma dar batimento ventricular regular (ex.: 150 bpm)',
+        'Primo da fibrilação atrial']}},
+    bav:{name:'Bloqueio AV total (3º grau)', bpm:'átrios e ventrículos separados', sev:'hi', danger:false,
+      build:()=>{
+        // P regulares numa cadência, QRS lentos noutra, dissociados
+        let pts=[],x=0;const push=(dx,y)=>{x+=dx;pts.push({x,y:baseY+y});};
+        pts.push({x:0,y:baseY});
+        const total=W; const pStep=60; const qStep=190;
+        let pNext=40,qNext=120;
+        while(x<total){
+          const nx=Math.min(pNext,qNext);
+          push(nx-x,0);
+          if(Math.abs(nx-pNext)<1){ // onda P
+            push(6,-9);push(6,0); pNext+=pStep;
+          } else { // QRS largo
+            push(6,8);push(9,-42);push(11,16);push(8,0); qNext+=qStep;
+          }
+        }
+        return ptsToPath(pts);
+      },
+      desc:{t:'Bloqueio AV de 3º grau (total)', sev:'GRAVE', items:[
+        'Átrios e ventrículos batem <b>cada um no seu ritmo</b>',
+        'Ondas P "soltas", sem relação com os QRS',
+        'A corrente do átrio não passa pro ventrículo',
+        'Costuma precisar de marca-passo — emergência']}},
+    pvc:{name:'Extrassístole ventricular (PVC)', bpm:'75 bpm + batida extra', sev:'mid', danger:false,
+      build:()=>ribbon(W,baseY,150,(i,rr)=> (i%3===2)? beat({rr,wideQRS:true,noP:true,r:30,s:30,twave:-18}) : beat({rr}) ),
+      desc:{t:'Extrassístole Ventricular (PVC)', sev:'ATENÇÃO', items:[
+        'Uma batida <b>extra, larga e bizarra</b> aparece adiantada',
+        'Não tem onda P antes dela (nasce no ventrículo)',
+        'A onda T dela costuma apontar pro lado oposto',
+        'Isoladas são comuns e geralmente benignas']}},
+    stemi:{name:'Infarto com supra de ST (STEMI)', bpm:'80 bpm', sev:'hi', danger:true,
+      build:()=>ribbon(W,baseY,140,(i,rr)=>beat({rr,st_elev:20,twave:10})),
+      desc:{t:'Infarto agudo — supra de ST (STEMI)', sev:'EMERGÊNCIA', items:[
+        'Segmento <b>ST elevado</b> acima da linha de base',
+        'Sinal de artéria entupida → músculo morrendo',
+        'Tempo é músculo: precisa desentupir rápido',
+        'Procure em quais derivações o supra aparece → localiza a parede']}},
+    vfib:{name:'Fibrilação Ventricular (FV)', bpm:'sem ritmo organizado', sev:'hi', danger:true,
+      build:()=>{
+        let pts=[],x=0;pts.push({x:0,y:baseY});
+        let seed=7;
+        while(x<W){ seed=(seed*9301+49297)%233280; const r=seed/233280;
+          x+=6+r*6; pts.push({x,y:baseY+(r-0.5)*70});}
+        return ptsToPath(pts);
+      },
+      desc:{t:'Fibrilação Ventricular (FV)', sev:'PARADA', items:[
+        'Linha <b>caótica</b>, sem QRS reconhecível',
+        'O coração "treme" e não bombeia sangue',
+        'É uma <b>parada cardíaca</b> — sem pulso',
+        'Conduta: RCP imediata + desfibrilação']}},
+    asystole:{name:'Assistolia', bpm:'0 bpm', sev:'hi', danger:true,
+      build:()=>{ let pts=[];pts.push({x:0,y:baseY});
+        // linha quase reta com leve ondulação
+        for(let x=0;x<=W;x+=40){pts.push({x,y:baseY+Math.sin(x/120)*1.2});}
+        return ptsToPath(pts);},
+      desc:{t:'Assistolia', sev:'PARADA', items:[
+        'Linha praticamente <b>reta</b> — sem atividade elétrica',
+        'O coração parou completamente',
+        'É parada cardíaca; <b>não</b> se desfibrila (não há ritmo pra reverter)',
+        'Conduta: RCP de alta qualidade e tratar causas']}},
+  };
+  const order=[['sinusal','Sinusal'],['taqui','Taquicardia'],['bradi','Bradicardia'],['fa','Fibrilação Atrial'],['flutter','Flutter'],['pvc','Extrassístole'],['bav','BAV total'],['stemi','STEMI ⚠'],['vfib','FV ⚠'],['asystole','Assistolia ⚠']];
+  const tabs=document.getElementById('rhythmTabs');
+  const pathEl=document.getElementById('rhythmPath');
+  const monitor=document.getElementById('rhythmMonitor');
+  let off=0, anim=null;
+
+  function show(key){
+    const r=rhythms[key];
+    pathEl.setAttribute('d', r.build());
+    pathEl.setAttribute('stroke', r.danger?'var(--red)':'var(--green)');
+    pathEl.style.filter='drop-shadow(0 0 6px '+(r.danger?'rgba(255,93,108,.55)':'var(--green-glow)')+')';
+    document.getElementById('rmName').textContent=r.name;
+    document.getElementById('rmName').className='rm-name'+(r.danger?' danger':'');
+    document.getElementById('rmBpm').textContent=r.bpm;
+    monitor.classList.toggle('alarm', r.danger);
+    const sevClass = r.desc.sev==='NORMAL'?'ok':(r.desc.sev==='ATENÇÃO'||r.desc.sev==='IMPORTANTE')?'mid':'hi';
+    document.getElementById('rhythmDesc').className='rhythm-desc'+(r.danger?' danger':'');
+    document.getElementById('rhythmDesc').innerHTML='<div class="rt">'+r.desc.t+'<span class="sev '+sevClass+'">'+r.desc.sev+'</span></div><ul>'+r.desc.items.map(i=>'<li>'+i+'</li>').join('')+'</ul>';
+    document.querySelectorAll('.rtab').forEach(t=>{
+      t.classList.toggle('on',t.dataset.k===key);
+      t.classList.toggle('danger',r.danger && t.dataset.k===key);
+    });
+  }
+  order.forEach(([k,label])=>{
+    const t=document.createElement('button');t.className='rtab';t.dataset.k=k;t.textContent=label;
+    if(rhythms[k].danger)t.classList.add('danger');
+    t.onclick=()=>show(k);
+    tabs.appendChild(t);
+  });
+  // scroll contínuo do monitor
+  function tick(){ off=(off+1.4)%760; pathEl.setAttribute('transform','translate('+(-off)+',0)'); requestAnimationFrame(tick);}
+  tick();
+  show('sinusal');
+})();
+
+/* ---------------- MÓDULO 8: QUIZ ---------------- */
+body('quiz').innerHTML = `
+  <p class="mod-intro">Vamos ver o que ficou! Olhe o traçado, leia a pergunta e escolha. Eu explico cada resposta — errar aqui é parte de aprender.</p>
+  <div class="card">
+    <div class="quiz-progress"><span id="qProg">Questão 1 de 6</span><span class="quiz-score" id="qScore">Acertos: 0</span></div>
+    <div class="quiz-monitor">
+      <div class="rm-top"><span class="rm-name" id="quizLead">Traçado · DII</span><span class="rm-bpm">25 mm/s</span></div>
+      <svg viewBox="0 0 760 120" class="wave-svg" style="height:110px">
+        <path id="quizPath" fill="none" stroke="var(--green)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 6px var(--green-glow))"/>
+      </svg>
+    </div>
+    <div class="quiz-q" id="quizQ"></div>
+    <div class="quiz-opts" id="quizOpts"></div>
+    <div class="quiz-fb" id="quizFb"></div>
+    <div class="pager" style="margin-top:18px">
+      <span></span>
+      <button class="btn" id="quizNext" style="display:none">Próxima ›</button>
+    </div>
+  </div>
+`;
+(function(){
+  const W=1520, baseY=60;
+  const questions=[
+    {build:()=>ribbon(W,baseY,150,(i,rr)=>beat({rr})),
+     q:'Há onda P antes de cada QRS, R-R regular, ~75 bpm. Que ritmo é este?',
+     opts:['Ritmo sinusal normal','Fibrilação atrial','Taquicardia','Bloqueio AV total'], correct:0,
+     fb:'É o ritmo normal: P antes de cada QRS, R-R regular e frequência entre 60–100.'},
+    {build:()=>{let s=[120,180,95,150,200,110];return ribbon(W,baseY,(i)=>s[i%s.length],(i,rr)=>beat({rr,noP:true,p:0}));},
+     q:'Não há ondas P e o R-R é totalmente irregular. O que é?',
+     opts:['Bradicardia','Fibrilação atrial','Ritmo sinusal','Flutter'], correct:1,
+     fb:'Ausência de P + R-R "irregularmente irregular" = fibrilação atrial. Risco de coágulo/AVC.'},
+    {build:()=>ribbon(W,baseY,260,(i,rr)=>beat({rr})),
+     q:'O traçado é regular, com P normal, mas o R-R está bem espaçado (~46 bpm). Classifique a frequência:',
+     opts:['Taquicardia','Normal','Bradicardia','Não dá pra saber'], correct:2,
+     fb:'Menos de 60 bpm = bradicardia. Aqui o ritmo ainda é sinusal, só que lento.'},
+    {build:()=>ribbon(W,baseY,140,(i,rr)=>beat({rr,st_elev:20,twave:10})),
+     q:'Repare no segmento entre o QRS e a onda T: ele está elevado acima da linha de base. Isso sugere:',
+     opts:['Nada, é normal','Supra de ST (possível infarto)','Bradicardia','Onda P aumentada'], correct:1,
+     fb:'Segmento ST elevado (supra) é sinal clássico de infarto agudo (STEMI). Emergência — tempo é músculo.'},
+    {build:()=>ribbon(W,baseY,150,(i,rr)=> (i%3===2)? beat({rr,wideQRS:true,noP:true,r:28,s:28,twave:-16}) : beat({rr}) ),
+     q:'No meio de batidas normais, surge uma batida adiantada, larga e sem onda P. O que é?',
+     opts:['Onda T gigante','Extrassístole ventricular (PVC)','Flutter','Assistolia'], correct:1,
+     fb:'Batida extra, larga, sem P e adiantada = extrassístole ventricular. Isoladas geralmente são benignas.'},
+    {build:()=>ribbon(W,baseY,90,(i,rr)=>beat({rr,r:40})),
+     q:'P presente antes de cada QRS, tudo regular, mas a ~130 bpm. Qual o diagnóstico?',
+     opts:['Taquicardia sinusal','Fibrilação atrial','Bradicardia','Bloqueio AV'], correct:0,
+     fb:'Ritmo organizado (P + QRS regular) acima de 100 bpm = taquicardia sinusal. Procure a causa (dor, febre, exercício...).'},
+  ];
+  let idx=0, score=0, answered=false;
+  const pathEl=document.getElementById('quizPath');
+  let off=0; function tick(){off=(off+1.3)%760;pathEl.setAttribute('transform','translate('+(-off)+',0)');requestAnimationFrame(tick);} tick();
+
+  function render(){
+    answered=false;
+    const Q=questions[idx];
+    pathEl.setAttribute('d',Q.build());
+    document.getElementById('qProg').textContent='Questão '+(idx+1)+' de '+questions.length;
+    document.getElementById('quizQ').textContent=Q.q;
+    const opts=document.getElementById('quizOpts');opts.innerHTML='';
+    Q.opts.forEach((o,i)=>{
+      const b=document.createElement('button');b.className='qopt';b.textContent=o;
+      b.onclick=()=>choose(i,b);
+      opts.appendChild(b);
+    });
+    const fb=document.getElementById('quizFb');fb.className='quiz-fb';fb.textContent='';
+    document.getElementById('quizNext').style.display='none';
+  }
+  function choose(i,btn){
+    if(answered)return; answered=true;
+    const Q=questions[idx];
+    const all=document.querySelectorAll('.qopt');
+    all.forEach((b,j)=>{
+      b.classList.add('disabled');
+      if(j===Q.correct)b.classList.add('correct');
+    });
+    const fb=document.getElementById('quizFb');
+    if(i===Q.correct){ score++; fb.className='quiz-fb show good'; fb.innerHTML='✅ Isso! '+Q.fb;}
+    else{ btn.classList.add('wrong'); fb.className='quiz-fb show bad'; fb.innerHTML='❌ Quase. '+Q.fb;}
+    document.getElementById('qScore').textContent='Acertos: '+score;
+    const next=document.getElementById('quizNext');
+    next.style.display='block';
+    next.textContent = idx<questions.length-1 ? 'Próxima ›' : 'Ver resultado ›';
+  }
+  document.getElementById('quizNext').onclick=()=>{
+    if(idx<questions.length-1){idx++;render();}
+    else{
+      const pct=Math.round(score/questions.length*100);
+      let msg = pct===100?'Perfeito! Você mandou muito bem. 🏆':pct>=70?'Muito bom! Já tem uma base sólida. 💪':'Bom começo — revise os módulos e tente de novo. Cada erro ensina. 🌱';
+      document.querySelector('#mod-quiz .card').innerHTML=
+        '<h3><span class="ic">🎯</span> Resultado</h3>'+
+        '<div class="calc-readout"><span class="num">'+score+'/'+questions.length+'</span></div>'+
+        '<p style="text-align:center;font-size:1.1rem">'+msg+'</p>'+
+        '<div class="ctrl-row" style="justify-content:center"><button class="btn" onclick="location.reload()">↻ Refazer o quiz</button><button class="btn ghost" onclick="goTo(\'ritmos\')">Revisar ritmos</button></div>';
+    }
+  };
+  render();
+})();
+
+/* navegação por teclado */
+document.addEventListener('keydown',e=>{
+  const cur=MODULES.findIndex(m=>document.getElementById('mod-'+m.id).classList.contains('show'));
+  if(e.key==='ArrowRight'&&cur<MODULES.length-1)goTo(MODULES[cur+1].id);
+  if(e.key==='ArrowLeft'&&cur>0)goTo(MODULES[cur-1].id);
+});
+</script>
+</body>
+</html>
