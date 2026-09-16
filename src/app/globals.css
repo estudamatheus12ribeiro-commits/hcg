@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f7f5;
+  --surface: #ffffff;
+  --surface-muted: #f0f0ee;
+  --foreground: #17181c;
+  --foreground-muted: #5b5d66;
+  --border: #e2e2df;
+
+  --brand: #1f2937;
+  --accent-concursos: #2451b5;
+  --accent-concursos-soft: #e7edfb;
+  --accent-medicina: #0d7d6f;
+  --accent-medicina-soft: #e1f4f1;
+
+  --success: #1c8a4b;
+  --success-soft: #e5f6ec;
+  --warning: #b3730b;
+  --warning-soft: #fbf0dd;
+  --danger: #c22b3a;
+  --danger-soft: #fbe7e9;
+  --info: #3457b2;
+  --info-soft: #eaeffb;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-border: var(--border);
+  --color-brand: var(--brand);
+  --color-accent-concursos: var(--accent-concursos);
+  --color-accent-concursos-soft: var(--accent-concursos-soft);
+  --color-accent-medicina: var(--accent-medicina);
+  --color-accent-medicina-soft: var(--accent-medicina-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #101114;
+    --surface: #17181c;
+    --surface-muted: #1d1f24;
+    --foreground: #eceef1;
+    --foreground-muted: #9a9da6;
+    --border: #2b2d33;
+    --accent-concursos-soft: #1b2740;
+    --accent-medicina-soft: #0f2b27;
+    --success-soft: #113322;
+    --warning-soft: #3a2a0c;
+    --danger-soft: #3a1418;
+    --info-soft: #17233f;
+  }
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+@media print {
+  nav, header, .no-print {
+    display: none !important;
+  }
+}
