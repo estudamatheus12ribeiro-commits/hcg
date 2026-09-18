@@ -1,93 +1,150 @@
-# hcg# 🫀 ECG do Zero — Aula Interativa
+# HCG Estudos
 
-Uma aula de eletrocardiograma **visual, prática e 100% interativa**, em um único arquivo HTML. Sem decoreba: você *vê* a eletricidade do coração virar onda, mede, calcula a frequência e reconhece ritmos — clicando em tudo, no estilo de um monitor cardíaco.
+Aplicativo privado de estudos por questões, com diagnóstico de dificuldades,
+caderno de erros em PDF e revisão espaçada — uso exclusivo de **Matheus**
+(aba "Concursos") e **Laura** (aba "Medicina"). Não há cadastro público.
 
----
+Inspirado nos princípios públicos do Hospital Questiona (aprendizagem por
+questões, caderno de erros, diagnóstico de dificuldades), com identidade
+visual, textos e lógica próprios.
 
-## ▶️ Como abrir
+## Stack e arquitetura
 
-Não precisa instalar nada. É um arquivo independente.
+- **Next.js 16 (App Router) + TypeScript + Tailwind v4** — front-end e API routes no mesmo app.
+- **Supabase** (Postgres + Auth + Storage) — banco de dados persistente, autenticação e arquivos privados.
+  Projeto dedicado já provisionado: `hcg-estudos` (`xqxjodxjwzrkmhonuivq`), plano gratuito.
+- **RLS (Row Level Security)** em todas as tabelas: cada perfil só enxerga sua
+  própria área (`concursos`/`medicina`) e seus próprios dados pessoais
+  (respostas, blocos, revisões, PDFs, metas). Verificado diretamente no banco
+  simulando as duas contas (ver seção "O que foi validado").
+- **pdfkit** — geração real de PDF (texto selecionável/pesquisável, A4).
+- **pdf-parse** — extração de texto de PDFs nativos.
+- **tesseract.js** — OCR de imagens (páginas escaneadas exportadas como JPG/PNG).
+- **@anthropic-ai/sdk (Claude)** — geração de questões inéditas e explicações do caderno de erros, só no servidor. Sem `ANTHROPIC_API_KEY`, o sistema continua funcionando (import manual, banco de questões, blocos, PDFs, estatísticas, revisão) e apenas os recursos de IA ficam desativados com aviso claro.
 
-1. Baixe o arquivo `aula-ecg.html`.
-2. Dê **dois cliques** nele — abre no seu navegador (Chrome, Edge, Firefox, Safari…).
-3. Pronto. Funciona offline, no celular e no computador.
+## Como rodar localmente
 
-> Precisa de internet apenas no primeiro carregamento das fontes; depois roda sem conexão.
+```bash
+npm install
+cp .env.example .env.local   # já vem com URL e chave anônima do projeto Supabase dedicado
+npm run dev
+```
 
----
+Acesse `http://localhost:3000/login`.
 
-## 🗺️ O que você vai aprender (8 módulos)
+### Contas (sem cadastro público)
 
-| Nº | Módulo | O que faz aqui |
-|----|--------|----------------|
-| 00 | **Bem-vindo** | A ideia central que destrava o ECG inteiro |
-| 01 | **O coração é elétrico** | Animação da faísca percorrendo nó SA → AV → His → Purkinje |
-| 02 | **P, QRS e T** | Clique em cada parte da onda e descubra o que ela significa |
-| 03 | **O papel quadriculado** | A "régua" do ECG: tempo (0,04 s) e voltagem (0,1 mV) |
-| 04 | **Frequência cardíaca** | Arraste o controle e veja os bpm e os 3 métodos de cálculo ao vivo |
-| 05 | **As 12 derivações** | Clique em cada "câmera" e veja qual parede do coração ela filma |
-| 06 | **Leitura sistemática** | O roteiro fixo de 5 passos para ler qualquer ECG |
-| 07 | **Banco de ritmos** | Traçados animados: do sinusal normal ao infarto, FV e assistolia |
-| 08 | **Pratique** | Quiz de 6 casos com correção explicada |
+Dois usuários fixos já foram criados no Supabase Auth do projeto (e-mails
+internos `matheus@hcg.local` e `laura@hcg.local`). As senhas iniciais foram
+geradas aleatoriamente e enviadas fora deste repositório (na conversa que
+gerou este projeto) — nunca são commitadas em texto puro. Troque-as assim que
+possível em **Configurações → Trocar senha**, ou redefina diretamente pelo
+Supabase Dashboard (Authentication → Users) se as tiver perdido.
 
-A sequência vai do **básico ao avançado** — recomendo seguir a ordem na primeira vez.
+## Fluxo central (o que já funciona de ponta a ponta)
 
----
+1. **Importar uma prova** (`/provas/importar`): envia PDF da prova e, opcionalmente, gabarito separado.
+2. **Conferir a extração** (`/provas/[id]`): tela de revisão mostra cada questão extraída com nível de confiança e motivo de revisão; nada é confirmado automaticamente. PDFs sem camada de texto (escaneados) são sinalizados — este ambiente não rasteriza PDF em imagem, então páginas escaneadas devem ser reenviadas como JPG/PNG para OCR (tesseract.js).
+3. **Resolver dez questões** (`/bloco/novo` → `/bloco/[id]`): escolhe prova/disciplina/assunto/dificuldade/origem e modo (estudo ou simulado); cada resposta registra confiança (certeza/dúvida/chute), tempo ativo e trocas de alternativa.
+4. **Registrar confiança e calcular resultado**: classificação em 6 categorias (acerto seguro, acerto com dúvida, acerto por chute, erro com dúvida, erro com alta confiança, sem resposta) — nunca inventa correção quando o gabarito está ausente.
+5. **Gerar PDF personalizado** (`/bloco/[id]/resultado` e `/pdfs`): caderno de erros real, com estrutura "erro → conceito → como reconhecer", perguntas de recuperação ativa, fontes e status de verificação.
+6. **Agendar revisão** (`/revisoes`): fila de revisão espaçada com intervalos iniciais configuráveis (1, 3, 7, 14, 30 dias), reajustados pelo desempenho, com a razão da priorização explicada.
 
-## 🖱️ Controles e interações
+Depois disso, também funcionam: geração de questões inéditas por IA com
+análise de incidência transparente (`/questoes`), estatísticas com
+numerador/denominador reais e aviso de amostra insuficiente (`/desempenho`),
+simulados com distribuição por edital importado (`/simulados`), fontes com
+verificação periódica configurável (`/configuracoes`), painel conjunto opt-in
+de constância (não compara notas), export/backup completo dos dados em JSON.
 
-- **Barra de navegação no topo** — pule para qualquer módulo a qualquer momento.
-- **Setas ← →** do teclado — avança e volta entre os módulos.
-- **Botões ▶ / ↻** (Módulo 1) — animam e repetem a batida do coração.
-- **Clique na onda** (Módulo 2) — toque em P, QRS, ST ou T para explicações.
-- **Controle deslizante** (Módulo 4) — muda a distância entre batidas e recalcula a frequência em tempo real.
-- **Banco de ritmos** (Módulo 7) — alterne entre ritmos; os perigosos acendem o **alarme vermelho**.
-- **Quiz** (Módulo 8) — escolha a resposta e receba feedback na hora.
+## O que foi validado nesta entrega
 
----
+Este ambiente de execução (sandbox) **bloqueia por política de rede o acesso
+direto** (navegador, `curl`, `fetch`) ao host do projeto Supabase — só o canal
+dedicado do MCP consegue falar com ele. Por isso, a validação foi feita assim:
 
-## 🧠 A grande sacada do ECG
+- **Schema, RLS e dados**: aplicados e verificados diretamente no Postgres via
+  MCP, inclusive simulando as duas contas (`set_config('request.jwt.claims', ...)`
+  + `set role authenticated`) para confirmar que Laura não enxerga nenhuma
+  linha de `exams`/`questions` da área de Matheus (e vice-versa), e que cada
+  perfil só vê a própria linha em `profiles`.
+- **Lógica de negócio pura** (classificação de resultado, causa provável,
+  revisão espaçada, estatísticas com amostra mínima, parser de questões e de
+  gabarito, análise de incidência): testada localmente sem rede, todos os
+  casos passaram.
+- **Geração de PDF real**: gerado localmente com `pdfkit`, confirmado que é
+  `%PDF` válido, com texto selecionável (extraído e conferido) e layout
+  correto — um bug de caractere (seta Unicode não suportada pela fonte
+  padrão) foi encontrado e corrigido nesse processo.
+- **Build de produção** (`npm run build`) e `eslint` limpos.
+- **Não validado nesta sessão** (por causa do bloqueio de rede, não por
+  limitação do app): o fluxo clicado de ponta a ponta no navegador contra o
+  Supabase real (login → responder bloco → PDF → revisão). O código do fluxo
+  é o mesmo testado em partes acima; recomenda-se um clique manual assim que
+  o app estiver rodando com acesso normal à internet (localmente ou já
+  implantado) — comece pela prova de demonstração já carregada (veja abaixo).
 
-> A eletricidade vindo **na direção** de um eletrodo → o traçado **sobe**.
-> A eletricidade **se afastando** → o traçado **desce**.
+Foi inserida uma prova de exemplo, claramente identificada, para permitir
+testar o primeiro bloco sem precisar importar um PDF antes:
+**"[DEMONSTRAÇÃO] Simulado de Direito Constitucional"** (12 questões
+confirmadas com gabarito, área Concursos/Matheus). Nenhuma resposta foi
+simulada — os dados de desempenho continuam vazios até o uso real.
 
-Esse único princípio explica a maior parte de tudo o que você verá no curso.
+## Configurações externas pendentes (para uso real e implantação)
 
----
+1. **Implantar o Next.js** em algum host (Vercel, um VPS, etc.) — este
+   ambiente é só de desenvolvimento/sessão e não fica no ar depois que a
+   sessão termina. Configure lá as variáveis de `.env.example`.
+2. **`ANTHROPIC_API_KEY`** (opcional, mas necessária para os recursos de IA):
+   geração de questões inéditas e explicações automáticas do caderno de
+   erros. Sem ela, essas telas mostram aviso e o restante do app funciona
+   normalmente com conteúdo baseado só no que foi cadastrado manualmente.
+3. **`SUPABASE_SERVICE_ROLE_KEY`** (opcional): só é usada pela rotina de
+   verificação periódica de fontes (`/api/cron/verificar-fontes`). Pegue em
+   Supabase Dashboard → Project Settings → API. Nunca exponha no navegador.
+4. **`CRON_SECRET`**: defina um valor forte e configure um agendador externo
+   (cron do host, GitHub Actions, Vercel Cron etc.) para chamar
+   `POST /api/cron/verificar-fontes` periodicamente com
+   `Authorization: Bearer <CRON_SECRET>`. Sem isso, a verificação automática
+   de fontes cadastradas em Configurações não roda sozinha (mas pode ser
+   marcada manualmente como verificada a qualquer momento).
+5. **Custos**: o projeto Supabase está no plano gratuito (US$0/mês no
+   provisionamento). Uso de IA tem custo por token, estimado e registrado em
+   `ai_usage_log`; configure um limite mensal em Configurações. Nunca é
+   prometido funcionamento 100% gratuito indefinidamente — depende dos
+   limites do plano Supabase e do uso de IA.
+6. **OCR de PDFs escaneados**: este código não rasteriza PDF em imagem
+   (exigiria um binário como poppler/GraphicsMagick, indisponível aqui). Para
+   provas totalmente escaneadas, exporte as páginas como JPG/PNG e envie-as —
+   o OCR (tesseract.js) roda sobre elas normalmente.
 
-## 🩺 Ritmos incluídos no banco
+## Limitações conhecidas / decisões assumidas
 
-**Normais / leves:** Sinusal normal · Taquicardia sinusal · Bradicardia sinusal
-**Importantes:** Fibrilação atrial · Flutter atrial · Extrassístole ventricular (PVC) · Bloqueio AV total
-**Emergências:** Infarto com supra de ST (STEMI) · Fibrilação ventricular (FV) · Assistolia
+- Cobertura de edital (seção 10 do pedido) ainda não tem uma tela dedicada de
+  "% do edital coberto"; a distribuição por edital já é usada para montar
+  simulados (`/simulados`), mas falta o indicador de cobertura acumulada.
+- A extração de questões por regex é heurística (cobre a maioria dos formatos
+  numerados comuns de provas brasileiras) — sempre passa pela tela de revisão
+  antes de contar para qualquer estatística.
+- Um único gabarito por vez é aplicado a questões já **confirmadas** com o
+  mesmo número dentro da mesma prova; correspondência ambígua (mais de uma
+  questão com o mesmo número) é sinalizada e não aplicada automaticamente.
 
-Cada um vem com traçado animado e a lista dos **sinais-chave** para reconhecê-lo.
+## Estrutura do projeto
 
----
+```
+src/app/(app)/…       páginas autenticadas (Início, Concursos, Medicina, Banco de questões,
+                       Provas, Caderno de erros, PDFs, Revisões, Simulados, Desempenho, Configurações)
+src/app/api/…          rotas de servidor (blocos, importação, gabarito, IA, PDFs, cron, export)
+src/lib/domain/…       regras de negócio puras (classificação, revisão espaçada, estatísticas)
+src/lib/extraction/…   extração de texto, OCR e parsers de questão/gabarito
+src/lib/ai/…           integração com Claude (geração de questões e explicações)
+src/lib/pdf/…          geração do caderno de erros em PDF
+src/lib/supabase/…     clientes Supabase (browser, servidor, admin) e tipos gerados do banco
+supabase/migrations/…  histórico de migrações SQL aplicadas ao projeto
+```
 
-## 🛠️ Detalhes técnicos
+## Legado
 
-- **Tecnologia:** HTML + CSS + JavaScript puro (sem bibliotecas externas, sem build).
-- **Traçados:** gerados por código — um gerador de ondas PQRST desenha cada batimento, o que permite criar e variar ritmos facilmente.
-- **Fontes:** Bricolage Grotesque, IBM Plex Mono e Sora (via Google Fonts).
-- **Tema:** estética de monitor cardíaco (fósforo verde sobre fundo escuro; papel quadriculado rosa real).
-- **Compatibilidade:** qualquer navegador moderno; layout responsivo para celular.
-
-### Quer personalizar?
-
-Tudo está em um arquivo só. Pontos úteis para mexer:
-
-- `MODULES` — lista de módulos (título, ícone, número).
-- `function beat(opts)` — molda um batimento (altura do R, presença de P, ST elevado, QRS largo…).
-- `const rhythms` (Módulo 7) e `const questions` (Módulo 8) — adicione novos ritmos e perguntas.
-- Bloco `:root` no CSS — todas as cores em variáveis, fácil de re-tematizar.
-
----
-
-## ⚠️ Aviso importante
-
-Este é um **material educativo** para aprender os conceitos de ECG. Os traçados são simplificações didáticas geradas por código. **Não substitui** avaliação médica, treinamento clínico formal nem a interpretação de um ECG real de paciente. Decisões clínicas exigem o traçado completo (12 derivações), o contexto e o exame do paciente por um profissional habilitado.
-
----
-
-*Feito para aprender clicando. 💚*
+O arquivo `aula-ecg.html` (aula interativa de ECG, não relacionada a este
+sistema) foi preservado em `app-legacy/`.
